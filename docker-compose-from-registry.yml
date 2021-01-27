@@ -1,0 +1,41 @@
+# Example run overwriting default vars
+#JENKINS_PORT=8081 JENKINSAPI_PORT=5000 NGINX_PORT=8082 METAPOD_TAG=latest JENKINS_VERSION=latest METAPOD_IMAGE=metapod CONTAINER_NAME_BASE=metapod docker-compose up
+#docker-regi.intra.rakuten-it.com/ts-lopezari01/release_metapod
+version: '3.5'
+services:
+  jenkins:
+    image: ${REGISTRY_LOCATION}_jenkins:${METAPOD_TAG}
+    container_name: ${CONTAINER_NAME_BASE}_jenkins
+    hostname: "jenkins"
+    ports:
+      - ${JENKINS_PORT}:8080
+    volumes:
+      - metapod:/var/jenkins_home/data/reports
+    networks:
+      - metapod
+  jenkinsapi:
+    image: ${REGISTRY_LOCATION}_jenkinsapi:${METAPOD_TAG}
+    container_name: ${CONTAINER_NAME_BASE}_jenkinsapi
+    hostname: "jenkinsapi"
+    ports:
+      - ${JENKINSAPI_PORT}:5000
+    command: 'python jenkinsapi/jenkins_api.py'
+    networks:
+      - metapod
+    depends_on:
+          - jenkins
+  nginx:
+    image: ${REGISTRY_LOCATION}_nginx:${METAPOD_TAG}
+    container_name: ${CONTAINER_NAME_BASE}_nginx
+    hostname: "nginx"
+    ports:
+      - ${NGINX_PORT}:80
+    volumes:
+     - metapod:/usr/share/nginx/reports
+
+networks:
+  metapod:
+    driver: bridge
+
+volumes:
+  metapod:

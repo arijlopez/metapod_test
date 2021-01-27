@@ -1,0 +1,34 @@
+FROM jenkins/jenkins:lts
+
+USER root
+RUN export DEBIAN_FRONTEND=noninteractive
+RUN apt-get update
+RUN apt-get install curl vim cron zip -y
+RUN curl https://packages.chef.io/files/stable/inspec/4.20.10/debian/9/inspec_4.20.10-1_amd64.deb > inspec_4.20.10-1_amd64.deb
+RUN dpkg -i inspec_4.20.10-1_amd64.deb
+RUN rm inspec_4.20.10-1_amd64.deb
+RUN mkdir -p /etc/chef/accepted_licenses
+RUN mkdir -p /etc/jenkins
+#RUN curl download from somewhere jenkins data to /var/jenkins/home
+#RUN mkdir /var/jenkins_home
+
+#RUN mkdir -p /jenkins_backup
+#ADD files/jenkins_backup /jenkins_backup
+#RUN zip -s 0 /jenkins_backup/jenkins_backup_latest_split.zip --out /jenkins_backup/jenkins_backup_latest.zip
+#RUN unzip /jenkins_backup/jenkins_backup_latest.zip  -d ${JENKINS_HOME}
+
+RUN mkdir -p /data/reports
+RUN ln -sf /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
+# Copy files file to the cron.d directory
+COPY files/a_maintanance_script /etc/cron.daily/a_maintanance_script
+# Give execution rights on the cron job
+RUN chmod 0755 /etc/cron.daily/a_maintanance_script
+COPY files/inspec /etc/chef/accepted_licenses
+COPY files/executors.groovy /usr/share/jenkins/ref/init.groovy.d/executors.groovy
+COPY files/secrets /etc/jenkins/
+RUN chown -R jenkins:root /data/reports
+RUN chown jenkins:jenkins /etc/jenkins/*
+
+USER jenkins
+
+ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/jenkins.sh"]
